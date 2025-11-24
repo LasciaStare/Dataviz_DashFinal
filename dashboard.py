@@ -496,8 +496,70 @@ tabs = [
                'de profundas transformaciones.')
     ]),
     dcc.Tab(label='5. Marco Teórico', children=[
-        html.H2('Marco Teórico'),
-        html.P('Resumen de conceptos teóricos (definiciones formales) claves relacionados con el proyecto. Se pueden incluir referencias o citas.')
+        dcc.Tab(label='5. Marco Teórico', children=[
+
+    html.H2('Marco Teórico'),
+
+    html.H4('Clustering multivariante de países como herramienta para identificar regímenes económicos'),
+    html.P(
+        'Agrupar países usando múltiples indicadores macroeconómicos permite identificar “regímenes” '
+        'o perfiles de desarrollo (por ejemplo, países de alta renta y reservas vs. países dependientes '
+        'de comercio o inversión extranjera). Esto es la base teórica para comparar 2007 vs 2022: '
+        'ver si los regímenes cambian de composición o tamaño.'
+    ),
+    
+
+    html.H4('Dimensionalidad y reducción de datos (PCA / técnicas de embedding) antes del clustering'),
+    html.P(
+        'Cuando se usan muchas series WDI (PIB per cápita, inflación, deuda, comercio, IED, etc.), '
+        'es estándar aplicar reducción de dimensionalidad (PCA, t-SNE, UMAP) para estabilizar los clusters '
+        'y mejorar la interpretabilidad de los componentes que capturan dimensiones como nivel de desarrollo, '
+        'vulnerabilidad macroeconómica o apertura externa.'
+    ),
+    
+
+    html.H4('Análisis comparativo pre/post-shock (estructura de clusters y trayectorias temporales)'),
+    html.P(
+        'Comparar las particiones de países en dos momentos clave (2007 vs 2022) y analizar las transiciones '
+        'entre clusters permite identificar el impacto agregado de shocks como la crisis financiera de 2008, '
+        'la pandemia y las tensiones geopolíticas recientes. La estabilidad o movilidad entre clusters refleja '
+        'resiliencia o fragilidad macroeconómica.'
+    ),
+    
+
+    html.H4('Construcción de indicadores compuestos orientados por clusters'),
+    html.P(
+        'En lugar de utilizar índices preexistentes, se pueden generar indicadores compuestos derivados de la '
+        'estructura de clusters, asignando pesos según la importancia de cada variable en la separación de los grupos. '
+        'Esto permite construir medidas más interpretables y consistentes para caracterizar cada cluster.'
+    ),
+    
+
+    html.H4('Problemas prácticos: imputación de datos, estandarización y sensibilidad del método de clustering'),
+    html.P(
+        'En análisis cross-country usando WDI es común enfrentar datos faltantes y escalas distintas. Las decisiones '
+        'sobre imputación, estandarización (z-score, transformación logarítmica), y la elección del algoritmo de clustering '
+        '(K-means, jerárquico, SOM, Gaussian Mixtures) influyen significativamente en los resultados. Evaluar la robustez '
+        'del modelo probando múltiples métodos es una recomendación habitual en la literatura.'
+    ),
+    
+
+    html.H3('Referencias bibliográficas'),
+    html.P(
+        'Saraiva, C., et al. (2025). Global development patterns: A clustering analysis of economic, social and '
+        'environmental indicators. Sustainable Futures, 10, 100907. https://doi.org/10.1016/j.sftr.2025.100907'
+    ),
+    html.P(
+        'Verma, A., Angelini, O., & Di Matteo, T. (2020). A new set of cluster-driven composite development indicators. '
+        'EPJ Data Science, 9, Article 8. https://doi.org/10.1140/epjds/s13688-020-00225-y'
+    ),
+    html.P(
+        'Ashurbayli-Huseynova, N., & Guliyeva, N. (2025). Identifying common patterns via country clustering based '
+        'on key macroeconomic indicators after banking crises. Banks and Bank Systems, 20(2), 62–82. '
+        'https://doi.org/10.21511/bbs.20(2).2025.06'
+    ),
+])
+
     ]),
     dcc.Tab(label='6. Metodología', children=[
         html.H2('Metodología'),

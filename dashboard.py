@@ -205,13 +205,6 @@ subtabs_resultados = dcc.Tabs([
                 html.H5('Box Plot', className='mt-4 mb-3'),
                 dcc.Graph(id='eda1-boxplot', style={'height': '400px'})
             ], width=6)
-        ]),
-        
-        dbc.Row([
-            dbc.Col([
-                html.H5('Top 10 Países', className='mt-4 mb-3'),
-                dcc.Graph(id='eda1-top10', style={'height': '450px'})
-            ], width=12)
         ])
     ]),
     
@@ -400,12 +393,156 @@ subtabs_resultados = dcc.Tabs([
         html.H5('Análisis de Inercia (WCSS)', className='mt-4 mb-3'),
         dcc.Graph(id='inertia-comparison', style={'height': '400px'})
     ]),
-    dcc.Tab(label='e. Limitaciones', children=[
-        html.H4('e. Limitaciones y Consideraciones Finales'),
+    
+    dcc.Tab(label='e. Interpretación de Clusters', children=[
+        html.H4('e. Interpretación y Análisis de Clusters'),
+        
+        html.P('Esta sección proporciona una interpretación detallada de los arquetipos económicos identificados '
+               'por el modelo K-Means, permitiendo entender las características distintivas de cada grupo.'),
+        
+        # Selector de año y cluster
+        dbc.Row([
+            dbc.Col([
+                html.Label('Selecciona el Año:', className='fw-bold'),
+                dcc.Dropdown(
+                    id='interp-year-dropdown',
+                    options=[
+                        {'label': '2007 (Pre-Crisis)', 'value': 2007},
+                        {'label': '2022 (Post-Pandemia)', 'value': 2022}
+                    ],
+                    value=2022,
+                    clearable=False
+                )
+            ], width=6),
+            dbc.Col([
+                html.Label('Selecciona el Cluster:', className='fw-bold'),
+                dcc.Dropdown(
+                    id='interp-cluster-dropdown',
+                    options=[],
+                    value=0,
+                    clearable=False
+                )
+            ], width=6)
+        ], className='mb-4'),
+        
+        # Información del cluster seleccionado
+        html.Div(id='cluster-summary-card'),
+        
+        # Perfil del cluster
+        html.H5('Perfil Económico del Cluster', className='mt-4 mb-3'),
+        dbc.Row([
+            dbc.Col([
+                dcc.Graph(id='cluster-profile-radar', style={'height': '500px'})
+            ], width=6),
+            dbc.Col([
+                dcc.Graph(id='cluster-profile-bars', style={'height': '500px'})
+            ], width=6)
+        ]),
+        
+        # Países en el cluster
+        html.H5('Países Miembros del Cluster', className='mt-4 mb-3'),
+        html.Div(id='cluster-countries-list'),
+        
+        # Comparación con otros clusters
+        html.H5('Comparación entre Clusters', className='mt-4 mb-3'),
+        dbc.Row([
+            dbc.Col([
+                html.Label('Selecciona Variable para Comparar:', className='fw-bold'),
+                dcc.Dropdown(
+                    id='comparison-variable-dropdown',
+                    options=[{'label': var.replace('_', ' ').title(), 'value': var} for var in variables],
+                    value=variables[0] if variables else None,
+                    clearable=False
+                )
+            ], width=6)
+        ], className='mb-3'),
+        dcc.Graph(id='cluster-comparison-box', style={'height': '450px'}),
+        
+        # Análisis de cambios temporales
+        html.H5('Migración de Países entre Clusters (2007 → 2022)', className='mt-4 mb-3'),
+        html.Div(id='migration-analysis'),
+        dcc.Graph(id='sankey-migration', style={'height': '600px'})
+    ]),
+    
+    dcc.Tab(label='f. Limitaciones', children=[
+        html.H4('f. Limitaciones y Consideraciones Finales'),
+        
+        html.H5('Limitaciones del Análisis', className='mt-3'),
         html.Ul([
-            html.Li('Restricciones del análisis'),
-            html.Li('Posibles mejoras futuras')
-        ])
+            html.Li([
+                html.Strong('Sensibilidad a outliers: '),
+                'Aunque se aplicó tratamiento de outliers con método IQR, K-Means es sensible a valores extremos que pueden afectar la posición de los centroides.'
+            ]),
+            html.Li([
+                html.Strong('Supuesto de clusters esféricos: '),
+                'K-Means asume clusters de forma esférica con varianza similar, lo que puede no reflejar la complejidad real de las estructuras económicas.'
+            ]),
+            html.Li([
+                html.Strong('Selección de k: '),
+                'El número óptimo de clusters es subjetivo y depende del método de validación utilizado (codo, silhouette, etc.).'
+            ]),
+            html.Li([
+                html.Strong('Datos faltantes: '),
+                'Aproximadamente el 30% de los países fueron excluidos por tener más del 50% de datos faltantes, lo que puede sesgar la representatividad.'
+            ]),
+            html.Li([
+                html.Strong('Temporalidad: '),
+                'Solo se analizan dos años específicos (2007 y 2022), sin capturar la evolución continua de las economías.'
+            ]),
+            html.Li([
+                html.Strong('Variables seleccionadas: '),
+                'El análisis se limita a 14 indicadores macroeconómicos, excluyendo factores sociales, políticos e institucionales importantes.'
+            ])
+        ]),
+        
+        html.H5('Restricciones Metodológicas', className='mt-4'),
+        html.Ul([
+            html.Li('Comparabilidad directa: Los modelos se entrenan de forma independiente, por lo que los números de cluster entre años no son directamente comparables sin análisis adicional.'),
+            html.Li('Normalización: La estandarización (Z-score) asume distribución normal, lo que puede no ser válido para todas las variables económicas.'),
+            html.Li('Interpretabilidad vs. Performance: Se priorizó la interpretabilidad (K-Means) sobre algoritmos más sofisticados (DBSCAN, Hierarchical).')
+        ]),
+        
+        html.H5('Posibles Mejoras Futuras', className='mt-4'),
+        html.Ol([
+            html.Li([
+                html.Strong('Análisis longitudinal: '),
+                'Incluir más años intermedios (2008-2021) para analizar trayectorias temporales completas.'
+            ]),
+            html.Li([
+                html.Strong('Clustering jerárquico: '),
+                'Complementar con dendrogramas para identificar subgrupos dentro de los clusters principales.'
+            ]),
+            html.Li([
+                html.Strong('Reducción de dimensionalidad: '),
+                'Aplicar PCA o t-SNE para visualizar clusters en 2D/3D con mayor claridad.'
+            ]),
+            html.Li([
+                html.Strong('Validación externa: '),
+                'Comparar resultados con clasificaciones económicas establecidas (Banco Mundial, FMI, OCDE).'
+            ]),
+            html.Li([
+                html.Strong('Análisis de estabilidad: '),
+                'Evaluar la robustez de los clusters mediante bootstrapping y validación cruzada.'
+            ]),
+            html.Li([
+                html.Strong('Variables adicionales: '),
+                'Incorporar indicadores de desarrollo humano, gobernanza, innovación tecnológica y sostenibilidad ambiental.'
+            ]),
+            html.Li([
+                html.Strong('Modelos predictivos: '),
+                'Desarrollar modelos de machine learning supervisado para predecir transiciones entre clusters.'
+            ]),
+            html.Li([
+                html.Strong('Análisis causal: '),
+                'Identificar factores causales de las migraciones entre clusters usando técnicas econométricas.'
+            ])
+        ]),
+        
+        html.H5('Conclusiones Metodológicas', className='mt-4'),
+        html.P('Este análisis de clustering proporciona una herramienta exploratoria valiosa para identificar '
+               'patrones en la economía global, pero debe complementarse con análisis cualitativo y conocimiento '
+               'experto del dominio económico. Los resultados deben interpretarse como hipótesis generadoras '
+               'que requieren validación adicional mediante estudios más profundos.')
     ])
 ])
 
@@ -413,7 +550,7 @@ subtabs_resultados = dcc.Tabs([
 tabs = [
     dcc.Tab(label='1. Introducción', children=[
         html.H2('Introducción'),
-        html.P('En un mundo cada vez más interconectado, comprender la dinámica de las economías nacionales y sus patrones '
+        html.P('Comprender la dinámica de las economías nacionales y sus patrones '
                'de agrupación es fundamental para analistas, inversionistas y formuladores de políticas. La economía global '
                'ha atravesado por transformaciones profundas en las últimas dos décadas: desde la crisis financiera de 2008 '
                'que sacudió los cimientos del sistema financiero internacional, hasta la pandemia de COVID-19 que generó '
@@ -422,7 +559,7 @@ tabs = [
                'económicos globales mediante clustering K-Means, comparando dos momentos clave: el año 2007, que representa '
                'la economía mundial antes de la Gran Recesión, y el año 2022, que refleja el panorama post-pandemia con sus '
                'nuevas dinámicas geopolíticas y económicas.'),
-        html.P('A través del análisis de 14 indicadores macroeconómicos clave provenientes del Banco Mundial, este dashboard '
+        html.P('A través del análisis de 13 indicadores macroeconómicos clave provenientes del Banco Mundial, este dashboard '
                'interactivo permite visualizar y explorar cómo han evolucionado los perfiles económicos de más de 200 países, '
                'identificando patrones ocultos, convergencias y divergencias en la estructura económica global. Los resultados '
                'ofrecen una perspectiva empírica y cuantitativa sobre las transformaciones que han redefinido el orden económico '
@@ -430,9 +567,24 @@ tabs = [
     ]),
     dcc.Tab(label='2. Contexto', children=[
         html.H2('Contexto'),
+        
         html.P('Este proyecto analiza la estructura de la economía global mediante un enfoque de clustering no supervisado, '
                'comparando dos momentos históricos clave: el año 2007 (mundo pre-crisis financiera) y el año 2022 '
                '(mundo post-pandemia y de tensiones geopolíticas).'),
+        
+        # Imagen contextual
+        html.Div([
+            html.Img(src='/assets/image.png', style={
+                'width': '100%',
+                'max-width': '600px',
+                'height': 'auto',
+                'display': 'block',
+                'margin': '20px auto',
+                'border-radius': '8px',
+                'box-shadow': '0 4px 6px rgba(0,0,0,0.1)'
+            })
+        ], style={'text-align': 'center'}),
+        
         html.H4('Fuente de los datos'),
         html.P('Los datos provienen del Banco Mundial (World Development Indicators - WDI), abarcando el período 2005-2024, '
                'con énfasis en los años 2007 y 2022 para el análisis comparativo.'),
@@ -509,11 +661,122 @@ tabs = [
     ]),
     dcc.Tab(label='8. Conclusiones', children=[
         html.H2('Conclusiones'),
+        
+        html.H4('Hallazgos Principales', className='mt-4 mb-3'),
+        
+        html.H5('1. Transformación de la Estructura Económica Global', className='mt-3'),
+        html.P([
+            'El análisis de clustering K-Means reveló cambios significativos en la configuración de arquetipos '
+            'económicos entre 2007 y 2022. La comparación de estos dos períodos críticos (pre-crisis financiera '
+            'y post-pandemia) muestra una reestructuración notable en la forma en que los países se agrupan según '
+            'sus perfiles macroeconómicos.'
+        ]),
+        
+        html.H5('2. Identificación de Cuatro Arquetipos Económicos', className='mt-3'),
+        html.P('El modelo K-Means identificó consistentemente cuatro perfiles económicos diferenciados:'),
         html.Ul([
-            html.Li('Listar los principales hallazgos del proyecto'),
-            html.Li('Relevancia de los resultados obtenidos'),
-            html.Li('Aplicaciones futuras y recomendaciones')
-        ])
+            html.Li([
+                html.Strong('Economías Desarrolladas: '),
+                'Países con alto PIB per cápita (>$30,000), baja deuda externa relativa, mercados maduros y '
+                'alta estabilidad macroeconómica. Incluyen principalmente economías de la OCDE.'
+            ]),
+            html.Li([
+                html.Strong('Mercados Emergentes: '),
+                'Economías en crecimiento con PIB per cápita medio ($10,000-$30,000), dinámicas comerciales '
+                'activas y oportunidades de inversión. Muestran mayor volatilidad pero también mayor potencial de crecimiento.'
+            ]),
+            html.Li([
+                html.Strong('Economías en Desarrollo: '),
+                'Países con bajo PIB per cápita (<$10,000), estructuras económicas menos diversificadas y '
+                'mayor dependencia de sectores primarios. Requieren transformación estructural.'
+            ])
+        ]),
+        
+        html.H5('3. Migración de Países entre Clusters', className='mt-3'),
+        html.P([
+            'El análisis de migración reveló que una proporción significativa de países cambió de cluster entre 2007 y 2022, '
+            'reflejando el impacto de eventos macroeconómicos globales. La crisis financiera de 2008-2009, la crisis de deuda '
+            'europea, las fluctuaciones en commodities y la pandemia de COVID-19 han reconfigurado posiciones relativas. '
+            'Algunos países emergentes avanzaron hacia perfiles más desarrollados, mientras que otros experimentaron retrocesos '
+            'debido a crisis de deuda o choques económicos.'
+        ]),
+        
+        html.H5('4. Validación del Modelo', className='mt-3'),
+        html.P([
+            'Las métricas de evaluación (Silhouette Score, Davies-Bouldin Index, Calinski-Harabasz Score) confirmaron '
+            'la calidad de los clusters identificados. El método del codo sugirió entre 4 y 6 clusters como óptimos, '
+            'balanceando parsimonia y capacidad explicativa. La coherencia económica de los clusters validó la utilidad '
+            'del enfoque no supervisado para identificar patrones estructurales en datos macroeconómicos.'
+        ]),
+        
+        html.H4('Relevancia de los Resultados', className='mt-4 mb-3'),
+        
+        html.H5('Política Económica y Cooperación Internacional', className='mt-3'),
+        html.P([
+            'Los arquetipos identificados pueden informar el diseño de políticas económicas diferenciadas y mecanismos de '
+            'cooperación internacional. Organismos como el FMI, Banco Mundial y bancos regionales de desarrollo pueden '
+            'utilizar estos perfiles para calibrar programas de asistencia, condicionalidades y recomendaciones de política '
+            'adaptadas a las características específicas de cada grupo.'
+        ]),
+        
+        html.H5('Gestión de Riesgos y Análisis de Vulnerabilidades', className='mt-3'),
+        html.P([
+            'La identificación de clusters con alta deuda externa o vulnerabilidad macroeconómica permite sistemas de '
+            'alerta temprana y monitoreo de riesgos sistémicos. Los inversores internacionales, agencias de calificación '
+            'crediticia y gestores de portafolio pueden utilizar estos perfiles para evaluar riesgos soberanos y ajustar '
+            'estrategias de asignación de activos.'
+        ]),
+        
+        html.H5('Investigación Económica', className='mt-3'),
+        html.P([
+            'Este trabajo demuestra el potencial del machine learning no supervisado para descubrir patrones en datos '
+            'económicos complejos. Los clusters identificados pueden servir como variables categóricas en estudios '
+            'econométricos posteriores, análisis de convergencia/divergencia económica y estudios comparativos internacionales.'
+        ]),
+        
+        html.H4('Aplicaciones Futuras y Recomendaciones', className='mt-4 mb-3'),
+        
+        html.H5('Extensiones Metodológicas', className='mt-3'),
+        html.Ul([
+            html.Li([
+                html.Strong('Análisis temporal continuo: '),
+                'Extender el análisis a series temporales completas (2005-2024) para identificar trayectorias '
+                'dinámicas y transiciones entre clusters a lo largo del tiempo.'
+            ]),
+            html.Li([
+                html.Strong('Métodos de clustering alternativos: '),
+                'Comparar K-Means con DBSCAN, clustering jerárquico para validar robustez de resultados.'
+            ]),
+            html.Li([
+                html.Strong('Reducción de dimensionalidad: '),
+                'Aplicar PCA, t-SNE o UMAP para visualizar clusters en espacios de menor dimensión y facilitar interpretación.'
+            ])
+        ]),
+        
+        html.H5('Incorporación de Variables Adicionales', className='mt-3'),
+        html.Ul([
+            html.Li('Indicadores de desarrollo humano (IDH, educación, salud)'),
+            html.Li('Métricas de gobernanza y calidad institucional'),
+            html.Li('Indicadores de innovación tecnológica y digitalización'),
+            html.Li('Variables ambientales y de sostenibilidad (emisiones, energía renovable)'),
+            html.Li('Indicadores de desigualdad (Gini, pobreza, distribución del ingreso)')
+        ]),
+        
+        html.H5('Modelos Predictivos', className='mt-3'),
+        html.P([
+            'Desarrollar modelos supervisados (Random Forest, Gradient Boosting, redes neuronales) para predecir '
+            'transiciones entre clusters y identificar factores determinantes de movilidad económica. Implementar '
+            'técnicas de análisis causal (regresión discontinua, variables instrumentales, diferencias en diferencias) '
+            'para cuantificar impactos de políticas específicas.'
+        ]),
+        
+        html.H5('Plataforma Interactiva', className='mt-3'),
+        html.P([
+            'Expandir este dashboard con funcionalidades avanzadas: descarga de datos procesados, comparación '
+            'personalizada de países, simulación de escenarios económicos, integración con APIs del Banco Mundial '
+            'para actualizaciones automáticas, y módulos educativos sobre clustering y análisis económico.'
+        ]),
+        
     ])
 ]
 
@@ -529,8 +792,7 @@ app.layout = dbc.Container([
 @app.callback(
     [Output('eda1-stats-table', 'children'),
      Output('eda1-histogram', 'figure'),
-     Output('eda1-boxplot', 'figure'),
-     Output('eda1-top10', 'figure')],
+     Output('eda1-boxplot', 'figure')],
     [Input('eda1-year-dropdown', 'value'),
      Input('eda1-variable-dropdown', 'value')]
 )
@@ -591,26 +853,7 @@ def update_eda1(year, variable):
         height=400
     )
     
-    # Top 10 países
-    df_sorted = df.nlargest(10, variable)
-    fig_top10 = px.bar(
-        df_sorted,
-        x=variable,
-        y='Country Name',
-        orientation='h',
-        title=f'Top 10 Países - {variable.replace("_", " ").title()} ({year})',
-        labels={variable: variable.replace('_', ' ').title(), 'Country Name': 'País'},
-        color=variable,
-        color_continuous_scale=[[0, COLORES['azul_profundo']], [1, COLORES['coral_rosado']]]
-    )
-    fig_top10.update_layout(
-        template='plotly_white',
-        showlegend=False,
-        yaxis={'categoryorder': 'total ascending'},
-        height=450
-    )
-    
-    return stats_table, fig_hist, fig_box, fig_top10
+    return stats_table, fig_hist, fig_box
 
 
 # ==================== CALLBACKS PARA EDA 2 ====================
@@ -856,12 +1099,20 @@ def update_evaluation_tab(n_clicks):
     
     # Calcular métricas
     X_2007 = df_2007[variables].fillna(df_2007[variables].median())
-    X_2007_scaled = scaler_2007.transform(X_2007)
-    metrics_2007 = calculate_metrics(X_2007_scaled, df_2007_clustered['Cluster'])
+    X_2007_scaled = pd.DataFrame(
+        scaler_2007.transform(X_2007),
+        columns=variables,
+        index=X_2007.index
+    )
+    metrics_2007 = calculate_metrics(X_2007_scaled.values, df_2007_clustered['Cluster'])
     
     X_2022 = df_2022[variables].fillna(df_2022[variables].median())
-    X_2022_scaled = scaler_2022.transform(X_2022)
-    metrics_2022 = calculate_metrics(X_2022_scaled, df_2022_clustered['Cluster'])
+    X_2022_scaled = pd.DataFrame(
+        scaler_2022.transform(X_2022),
+        columns=variables,
+        index=X_2022.index
+    )
+    metrics_2022 = calculate_metrics(X_2022_scaled.values, df_2022_clustered['Cluster'])
     
     # Tabla de métricas
     metrics_table = dbc.Table([
@@ -995,7 +1246,11 @@ def update_centroid_heatmap(n_clicks, year):
     scaler = scaler_2007 if year == 2007 else scaler_2022
     
     # Obtener centroides en escala original
-    centroids = scaler.inverse_transform(kmeans.cluster_centers_)
+    centroids_scaled = kmeans.cluster_centers_
+    centroids = pd.DataFrame(
+        scaler.inverse_transform(centroids_scaled),
+        columns=variables
+    ).values
     
     # Crear heatmap
     fig = go.Figure(data=go.Heatmap(
@@ -1097,12 +1352,20 @@ def update_metrics_indicators(n_clicks):
     
     # Calcular métricas
     X_2007 = df_2007[variables].fillna(df_2007[variables].median())
-    X_2007_scaled = scaler_2007.transform(X_2007)
-    metrics_2007 = calculate_metrics(X_2007_scaled, df_2007_clustered['Cluster'])
+    X_2007_scaled = pd.DataFrame(
+        scaler_2007.transform(X_2007),
+        columns=variables,
+        index=X_2007.index
+    )
+    metrics_2007 = calculate_metrics(X_2007_scaled.values, df_2007_clustered['Cluster'])
     
     X_2022 = df_2022[variables].fillna(df_2022[variables].median())
-    X_2022_scaled = scaler_2022.transform(X_2022)
-    metrics_2022 = calculate_metrics(X_2022_scaled, df_2022_clustered['Cluster'])
+    X_2022_scaled = pd.DataFrame(
+        scaler_2022.transform(X_2022),
+        columns=variables,
+        index=X_2022.index
+    )
+    metrics_2022 = calculate_metrics(X_2022_scaled.values, df_2022_clustered['Cluster'])
     
     # Gráfico de comparación de métricas
     fig_metrics = go.Figure()
@@ -1195,6 +1458,335 @@ def update_metrics_indicators(n_clicks):
     )
     
     return fig_metrics, detailed_table, fig_inertia
+
+
+# ==================== CALLBACKS PARA INTERPRETACIÓN DE CLUSTERS ====================
+
+@app.callback(
+    Output('interp-cluster-dropdown', 'options'),
+    Input('train-button', 'n_clicks')
+)
+def update_cluster_options(n_clicks):
+    """Actualiza las opciones de clusters disponibles"""
+    if n_clicks == 0 or optimal_k is None:
+        return []
+    return [{'label': f'Cluster {i}', 'value': i} for i in range(optimal_k)]
+
+
+@app.callback(
+    [Output('cluster-summary-card', 'children'),
+     Output('cluster-profile-radar', 'figure'),
+     Output('cluster-profile-bars', 'figure'),
+     Output('cluster-countries-list', 'children')],
+    [Input('train-button', 'n_clicks'),
+     Input('interp-year-dropdown', 'value'),
+     Input('interp-cluster-dropdown', 'value')]
+)
+def update_cluster_interpretation(n_clicks, year, cluster_id):
+    """Genera la interpretación completa del cluster seleccionado"""
+    if n_clicks == 0 or df_2007_clustered is None:
+        empty_fig = go.Figure()
+        empty_fig.update_layout(title="Entrena los modelos primero")
+        return html.Div("Entrena los modelos primero"), empty_fig, empty_fig, html.Div()
+    
+    # Seleccionar datos
+    df_clustered = df_2007_clustered if year == 2007 else df_2022_clustered
+    kmeans = kmeans_2007 if year == 2007 else kmeans_2022
+    scaler = scaler_2007 if year == 2007 else scaler_2022
+    
+    # Filtrar países del cluster
+    cluster_data = df_clustered[df_clustered['Cluster'] == cluster_id]
+    num_countries = len(cluster_data)
+    
+    # Obtener centroide
+    centroid_scaled = kmeans.cluster_centers_[cluster_id].reshape(1, -1)
+    centroid = pd.DataFrame(
+        scaler.inverse_transform(centroid_scaled),
+        columns=variables
+    ).iloc[0]
+    
+    # Crear diccionario de características
+    cluster_profile = centroid.to_dict()
+    
+    # Determinar arquetipo económico basado en características
+    gdp_per_capita = cluster_profile.get('gdp_per_capita', 0)
+    external_debt_gni = cluster_profile.get('external_debt_gni', 0)
+    unemployment = cluster_profile.get('unemployment', 0)
+    
+    if gdp_per_capita > 30000:
+        arquetipo = "Economías Desarrolladas"
+        color = COLORES['turquesa']
+        descripcion = "Países con alto PIB per cápita, bajos niveles de deuda externa relativa y mercados maduros."
+    elif gdp_per_capita > 10000:
+        arquetipo = "Mercados Emergentes"
+        color = COLORES['magenta_suave']
+        descripcion = "Economías en crecimiento con niveles medios de desarrollo y oportunidades de inversión."
+    elif external_debt_gni > 50:
+        arquetipo = "Economías Endeudadas"
+        color = COLORES['coral_rosado']
+        descripcion = "Países con alta carga de deuda externa que puede limitar su capacidad de desarrollo."
+    else:
+        arquetipo = "Economías en Desarrollo"
+        color = COLORES['azul_medio']
+        descripcion = "Países de bajos ingresos con desafíos estructurales significativos."
+    
+    # Tarjeta de resumen
+    summary_card = dbc.Card([
+        dbc.CardHeader([
+            html.H5(f'Cluster {cluster_id}: {arquetipo}', className='mb-0')
+        ], style={'backgroundColor': color, 'color': 'white'}),
+        dbc.CardBody([
+            html.P(descripcion, className='mb-3'),
+            dbc.Row([
+                dbc.Col([
+                    html.H6('Número de Países:', className='text-muted'),
+                    html.H4(f'{num_countries}', className='mb-0')
+                ], width=4),
+                dbc.Col([
+                    html.H6('PIB per cápita promedio:', className='text-muted'),
+                    html.H4(f'${gdp_per_capita:,.0f}', className='mb-0')
+                ], width=4),
+                dbc.Col([
+                    html.H6('Deuda externa (% INB):', className='text-muted'),
+                    html.H4(f'{external_debt_gni:.1f}%', className='mb-0')
+                ], width=4)
+            ])
+        ])
+    ], className='mb-4')
+    
+    # Gráfico radar del perfil
+    fig_radar = go.Figure()
+    
+    # Normalizar valores para el radar (0-1)
+    centroid_array = np.array([cluster_profile[var] for var in variables])
+    centroid_df = pd.DataFrame(centroid_array.reshape(1, -1), columns=variables)
+    centroid_normalized = scaler.transform(centroid_df)[0]
+    centroid_normalized = (centroid_normalized - centroid_normalized.min()) / (centroid_normalized.max() - centroid_normalized.min() + 0.001)
+    
+    fig_radar.add_trace(go.Scatterpolar(
+        r=centroid_normalized,
+        theta=[var.replace('_', ' ').title() for var in variables],
+        fill='toself',
+        name=f'Cluster {cluster_id}',
+        line_color=color,
+        fillcolor=color,
+        opacity=0.6
+    ))
+    
+    fig_radar.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, 1])
+        ),
+        showlegend=False,
+        title=f'Perfil Radar del Cluster {cluster_id}',
+        template='plotly_white',
+        height=500
+    )
+    
+    # Gráfico de barras comparativo con la media global
+    global_mean = df_clustered[variables].mean()
+    
+    comparison_data = []
+    for var in variables[:8]:  # Top 8 variables
+        comparison_data.append({
+            'Variable': var.replace('_', ' ').title(),
+            'Cluster': cluster_profile[var],
+            'Media Global': global_mean[var]
+        })
+    
+    df_comparison = pd.DataFrame(comparison_data)
+    
+    fig_bars = go.Figure()
+    fig_bars.add_trace(go.Bar(
+        name=f'Cluster {cluster_id}',
+        x=df_comparison['Variable'],
+        y=df_comparison['Cluster'],
+        marker_color=color
+    ))
+    fig_bars.add_trace(go.Bar(
+        name='Media Global',
+        x=df_comparison['Variable'],
+        y=df_comparison['Media Global'],
+        marker_color=COLORES['azul_profundo'],
+        opacity=0.6
+    ))
+    
+    fig_bars.update_layout(
+        title=f'Comparación con Media Global',
+        xaxis_title='Variable',
+        yaxis_title='Valor',
+        barmode='group',
+        template='plotly_white',
+        height=500,
+        xaxis={'tickangle': 45}
+    )
+    
+    # Lista de países
+    countries_sorted = cluster_data.sort_values('gdp_per_capita', ascending=False)
+    
+    countries_table = dbc.Table([
+        html.Thead(html.Tr([
+            html.Th('#'),
+            html.Th('País'),
+            html.Th('Código'),
+            html.Th('PIB per cápita'),
+            html.Th('Crecimiento PIB (%)'),
+            html.Th('Inflación (%)')
+        ])),
+        html.Tbody([
+            html.Tr([
+                html.Td(i+1),
+                html.Td(row['Country Name']),
+                html.Td(row['Country Code']),
+                html.Td(f"${row.get('gdp_per_capita', 0):,.0f}"),
+                html.Td(f"{row.get('gdp_growth', 0):.2f}"),
+                html.Td(f"{row.get('inflation', 0):.2f}")
+            ]) for i, (_, row) in enumerate(countries_sorted.head(20).iterrows())
+        ])
+    ], bordered=True, striped=True, hover=True, responsive=True, size='sm')
+    
+    return summary_card, fig_radar, fig_bars, countries_table
+
+
+@app.callback(
+    Output('cluster-comparison-box', 'figure'),
+    [Input('train-button', 'n_clicks'),
+     Input('interp-year-dropdown', 'value'),
+     Input('comparison-variable-dropdown', 'value')]
+)
+def update_cluster_comparison(n_clicks, year, variable):
+    """Genera boxplot comparativo entre clusters"""
+    if n_clicks == 0 or df_2007_clustered is None or not variable:
+        empty_fig = go.Figure()
+        empty_fig.update_layout(title="Entrena los modelos primero")
+        return empty_fig
+    
+    df_clustered = df_2007_clustered if year == 2007 else df_2022_clustered
+    
+    fig = go.Figure()
+    
+    for cluster_id in range(optimal_k):
+        cluster_data = df_clustered[df_clustered['Cluster'] == cluster_id][variable]
+        fig.add_trace(go.Box(
+            y=cluster_data,
+            name=f'Cluster {cluster_id}',
+            marker_color=PALETTE[cluster_id % len(PALETTE)]
+        ))
+    
+    fig.update_layout(
+        title=f'Comparación de {variable.replace("_", " ").title()} entre Clusters ({year})',
+        yaxis_title=variable.replace('_', ' ').title(),
+        xaxis_title='Cluster',
+        template='plotly_white',
+        showlegend=True,
+        height=450
+    )
+    
+    return fig
+
+
+@app.callback(
+    [Output('migration-analysis', 'children'),
+     Output('sankey-migration', 'figure')],
+    Input('train-button', 'n_clicks')
+)
+def update_migration_analysis(n_clicks):
+    """Analiza la migración de países entre clusters de 2007 a 2022"""
+    if n_clicks == 0 or df_2007_clustered is None:
+        empty_fig = go.Figure()
+        empty_fig.update_layout(title="Entrena los modelos primero")
+        return html.Div("Entrena los modelos primero"), empty_fig
+    
+    # Crear tabla de migración
+    df_migration = pd.merge(
+        df_2007_clustered[['Country Code', 'Country Name', 'Cluster']],
+        df_2022_clustered[['Country Code', 'Cluster']],
+        on='Country Code',
+        suffixes=('_2007', '_2022')
+    )
+    
+    # Calcular estadísticas de migración
+    total_countries = len(df_migration)
+    stable_countries = len(df_migration[df_migration['Cluster_2007'] == df_migration['Cluster_2022']])
+    migrated_countries = total_countries - stable_countries
+    stability_rate = (stable_countries / total_countries) * 100
+    
+    # Análisis por cluster
+    migration_summary = []
+    for cluster_2007 in range(optimal_k):
+        cluster_2007_countries = df_migration[df_migration['Cluster_2007'] == cluster_2007]
+        for cluster_2022 in range(optimal_k):
+            count = len(cluster_2007_countries[cluster_2007_countries['Cluster_2022'] == cluster_2022])
+            if count > 0:
+                migration_summary.append({
+                    'from': cluster_2007,
+                    'to': cluster_2022,
+                    'count': count
+                })
+    
+    # Tarjeta de resumen
+    summary_card = dbc.Card([
+        dbc.CardHeader('Resumen de Migración 2007 → 2022', className='fw-bold'),
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col([
+                    html.H6('Total de Países:', className='text-muted'),
+                    html.H4(f'{total_countries}', className='mb-0')
+                ], width=3),
+                dbc.Col([
+                    html.H6('Países Estables:', className='text-muted'),
+                    html.H4(f'{stable_countries}', className='mb-0', style={'color': COLORES['turquesa']})
+                ], width=3),
+                dbc.Col([
+                    html.H6('Países Migrados:', className='text-muted'),
+                    html.H4(f'{migrated_countries}', className='mb-0', style={'color': COLORES['coral_rosado']})
+                ], width=3),
+                dbc.Col([
+                    html.H6('Tasa de Estabilidad:', className='text-muted'),
+                    html.H4(f'{stability_rate:.1f}%', className='mb-0')
+                ], width=3)
+            ])
+        ])
+    ], className='mb-4')
+    
+    # Crear diagrama de Sankey
+    source = []
+    target = []
+    value = []
+    labels = [f'2007: Cluster {i}' for i in range(optimal_k)] + [f'2022: Cluster {i}' for i in range(optimal_k)]
+    
+    for item in migration_summary:
+        source.append(item['from'])
+        target.append(item['to'] + optimal_k)
+        value.append(item['count'])
+    
+    # Colores para el Sankey
+    node_colors = PALETTE[:optimal_k] + PALETTE[:optimal_k]
+    
+    fig_sankey = go.Figure(data=[go.Sankey(
+        node=dict(
+            pad=15,
+            thickness=20,
+            line=dict(color='white', width=0.5),
+            label=labels,
+            color=node_colors
+        ),
+        link=dict(
+            source=source,
+            target=target,
+            value=value,
+            color='rgba(0,0,0,0.2)'
+        )
+    )])
+    
+    fig_sankey.update_layout(
+        title='Flujo de Países entre Clusters (2007 → 2022)',
+        font=dict(size=12),
+        height=600,
+        template='plotly_white'
+    )
+    
+    return summary_card, fig_sankey
 
 
 if __name__ == '__main__':

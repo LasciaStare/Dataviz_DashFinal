@@ -1,0 +1,22 @@
+# --- Framework del Dashboard e Interfaz ---
+dash
+dash_bootstrap_components
+plotly
+statsmodels
+
+# --- Manipulación y Adquisición de Datos ---
+pandas
+
+# --- Machine Learning ---
+scikit-learn
+numpy
+
+# --- Conexión a Base de Datos ---
+sqlalchemy
+psycopg2-binary
+
+# --- Despliegue y Servidor de Producción ---
+gunicorn
+
+# --- Manejo de Variables de Entorno ---
+python-dotenv

@@ -61,7 +61,7 @@ subtabs_metodologia = dcc.Tabs([
         html.Ul([
             html.Li('Algoritmo: K-Means Clustering'),
             html.Li('Objetivo: Identificar arquetipos económicos globales comparando 2007 vs 2022'),
-            html.Li('Variables de entrada: 14 indicadores macroeconómicos del Banco Mundial'),
+            html.Li('Variables de entrada: 13 indicadores macroeconómicos del Banco Mundial'),
             html.Li('Sin variable objetivo (aprendizaje no supervisado)')
         ])
     ]),
@@ -491,7 +491,7 @@ subtabs_resultados = dcc.Tabs([
             ]),
             html.Li([
                 html.Strong('Variables seleccionadas: '),
-                'El análisis se limita a 14 indicadores macroeconómicos, excluyendo factores sociales, políticos e institucionales importantes.'
+                'El análisis se limita a 13 indicadores macroeconómicos, excluyendo factores sociales, políticos e institucionales importantes.'
             ])
         ]),
         

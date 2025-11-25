@@ -1314,17 +1314,15 @@ tabs = [
                             html.Ul([
                                 html.Li([
                                     html.Strong('Economías Desarrolladas: ', style={'color': COLORES['purpura_frio']}),
-                                    'Países con alto PIB per cápita (>$30,000), baja deuda externa relativa, mercados maduros y '
-                                    'alta estabilidad macroeconómica. Incluyen principalmente economías de la OCDE.'
+                                    'Países con alta estabilidad macroeconómica. Incluyen principalmente economías de la OCDE.'
                                 ], className='mb-2'),
                                 html.Li([
                                     html.Strong('Mercados Emergentes: ', style={'color': COLORES['magenta_suave']}),
-                                    'Economías en crecimiento con PIB per cápita medio ($10,000-$30,000), dinámicas comerciales '
-                                    'activas y oportunidades de inversión. Muestran mayor volatilidad pero también mayor potencial de crecimiento.'
+                                    'Economías en crecimiento activas y oportunidades de inversión. Muestran mayor volatilidad pero también mayor potencial de crecimiento.'
                                 ], className='mb-2'),
                                 html.Li([
                                     html.Strong('Economías en Desarrollo: ', style={'color': COLORES['coral_rosado']}),
-                                    'Países con bajo PIB per cápita (<$10,000), estructuras económicas menos diversificadas y '
+                                    'Países con estructuras económicas menos diversificadas y '
                                     'mayor dependencia de sectores primarios. Requieren transformación estructural.'
                                 ])
                             ], style={'lineHeight': '1.8'})

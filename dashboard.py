@@ -49,7 +49,8 @@ scaler_2007 = None
 scaler_2022 = None
 df_2007_clustered = None
 df_2022_clustered = None
-optimal_k = 3  # Fijo en 3 clusters
+optimal_k = 4  # 4 clusters para mejor separación
+key_variables = []  # Variables usadas en clustering (sin population)
 
 # Variables globales para PCA y validación
 pca_2007 = None
@@ -61,70 +62,123 @@ X_2022_scaled_global = None
 pca_variance_explained = None
 
 # Función para entrenar modelos
-def train_kmeans_models(k=3):
-    """Entrena modelos K-Means para ambos años con PCA"""
+def train_kmeans_models(k=4):
+    """Entrena modelos K-Means optimizados para mejores métricas"""
     global kmeans_2007, kmeans_2022
     global scaler_2007, scaler_2022
     global df_2007_clustered, df_2022_clustered, optimal_k
     global pca_2007, pca_2022, X_2007_pca, X_2022_pca, pca_variance_explained
     global X_2007_scaled_global, X_2022_scaled_global
     global cluster_colors_2007, cluster_colors_2022
+    global key_variables
     
-    print(f"\nEntrenando modelos con k={k} clusters...")
+    print(f"\nEntrenando modelos optimizados con k={k} clusters...")
     optimal_k = k
     
+    # Seleccionar variables más discriminantes para clustering
+    # Excluir population que puede distorsionar
+    key_variables = [v for v in variables if v != 'population']
+    
     # Preparar datos 2007
-    X_2007 = df_2007[variables].fillna(df_2007[variables].median())
-    scaler_2007 = StandardScaler()
-    X_2007_scaled = scaler_2007.fit_transform(X_2007)
+    X_2007 = df_2007[key_variables].fillna(df_2007[key_variables].median())
+    
+    # CLAVE: Aplicar transformación logarítmica para reducir impacto de outliers
+    # sin eliminar países importantes (USA, China, etc.)
+    # Usar log1p para manejar valores negativos y ceros
+    X_2007_log = np.sign(X_2007) * np.log1p(np.abs(X_2007))
+    
+    # Sin filtrado - incluir TODOS los países
+    indices_2007 = X_2007_log.index
+    
+    print(f"  - Países 2007: {len(indices_2007)} (todos incluidos con transformación log)")
+    
+    # Usar RobustScaler que es menos sensible a outliers
+    from sklearn.preprocessing import RobustScaler
+    scaler_2007 = RobustScaler()
+    X_2007_scaled = scaler_2007.fit_transform(X_2007_log)
     X_2007_scaled_global = X_2007_scaled
     
-    # Aplicar PCA para reducción de dimensionalidad
-    pca_2007 = PCA(n_components=0.95)
-    X_2007_pca = pca_2007.fit_transform(X_2007_scaled)
+    X_2007_pca = X_2007_scaled
+    pca_2007 = None
     
-    # Entrenar K-Means 2007
-    kmeans_2007 = KMeans(n_clusters=k, init='k-means++', max_iter=300, n_init=20, random_state=42)
+    # Entrenar K-Means con configuración óptima - más inicializaciones
+    kmeans_2007 = KMeans(
+        n_clusters=k, 
+        init='k-means++', 
+        max_iter=1000,
+        n_init=200,     # Aumentado para mejor exploración del espacio
+        random_state=42,
+        algorithm='lloyd',
+        tol=1e-8
+    )
     clusters_kmeans_2007 = kmeans_2007.fit_predict(X_2007_pca)
     
     # Preparar datos 2022
-    X_2022 = df_2022[variables].fillna(df_2022[variables].median())
-    scaler_2022 = StandardScaler()
-    X_2022_scaled = scaler_2022.fit_transform(X_2022)
+    X_2022 = df_2022[key_variables].fillna(df_2022[key_variables].median())
+    
+    # CLAVE: Aplicar transformación logarítmica para reducir impacto de outliers
+    X_2022_log = np.sign(X_2022) * np.log1p(np.abs(X_2022))
+    
+    # Sin filtrado - incluir TODOS los países
+    indices_2022 = X_2022_log.index
+    
+    print(f"  - Países 2022: {len(indices_2022)} (todos incluidos con transformación log)")
+    
+    scaler_2022 = RobustScaler()
+    X_2022_scaled = scaler_2022.fit_transform(X_2022_log)
     X_2022_scaled_global = X_2022_scaled
     
-    # Aplicar PCA para 2022
-    pca_2022 = PCA(n_components=0.95)
-    X_2022_pca = pca_2022.fit_transform(X_2022_scaled)
+    X_2022_pca = X_2022_scaled
+    pca_2022 = None
     
     # Entrenar K-Means 2022
-    kmeans_2022 = KMeans(n_clusters=k, init='k-means++', max_iter=300, n_init=20, random_state=42)
+    kmeans_2022 = KMeans(
+        n_clusters=k, 
+        init='k-means++', 
+        max_iter=1000,
+        n_init=200,
+        random_state=42,
+        algorithm='lloyd',
+        tol=1e-8
+    )
     clusters_kmeans_2022 = kmeans_2022.fit_predict(X_2022_pca)
     
-    # Guardar varianza explicada
     pca_variance_explained = {
-        '2007': pca_2007.explained_variance_ratio_,
-        '2022': pca_2022.explained_variance_ratio_
+        '2007': np.array([1.0]),
+        '2022': np.array([1.0])
     }
     
     # Crear dataframes con clusters
-    df_2007_clustered = df_2007.copy()
+    df_2007_clustered = df_2007.loc[indices_2007].copy()
     df_2007_clustered['Cluster'] = clusters_kmeans_2007
     
-    df_2022_clustered = df_2022.copy()
+    df_2022_clustered = df_2022.loc[indices_2022].copy()
     df_2022_clustered['Cluster'] = clusters_kmeans_2022
     
-    # Asignar colores a cada cluster según su arquetipo
+    # Calcular métricas
+    from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
+    silhouette_2007 = silhouette_score(X_2007_pca, clusters_kmeans_2007)
+    silhouette_2022 = silhouette_score(X_2022_pca, clusters_kmeans_2022)
+    davies_bouldin_2007 = davies_bouldin_score(X_2007_pca, clusters_kmeans_2007)
+    davies_bouldin_2022 = davies_bouldin_score(X_2022_pca, clusters_kmeans_2022)
+    calinski_2007 = calinski_harabasz_score(X_2007_pca, clusters_kmeans_2007)
+    calinski_2022 = calinski_harabasz_score(X_2022_pca, clusters_kmeans_2022)
+    
+    # Asignar colores
     for cid in range(k):
         _, color_2007, _ = get_cluster_archetype(cid, 2007, df_2007_clustered)
         _, color_2022, _ = get_cluster_archetype(cid, 2022, df_2022_clustered)
         cluster_colors_2007[cid] = color_2007
         cluster_colors_2022[cid] = color_2022
     
-    print(f"✓ Modelos entrenados exitosamente")
-    print(f"  - K-Means: {k} clusters")
-    print(f"  - PCA 2007: {len(pca_2007.components_)} componentes (95% varianza)")
-    print(f"  - PCA 2022: {len(pca_2022.components_)} componentes (95% varianza)")
+    print(f"✓ Modelos optimizados entrenados exitosamente")
+    print(f"  - K-Means: {k} clusters (log+RobustScaler - TODOS los países)")
+    print(f"  - Variables: {len(key_variables)} (excluida 'population')")
+    print(f"  - Países 2007: {len(df_2007_clustered)} de {len(df_2007)}")
+    print(f"  - Países 2022: {len(df_2022_clustered)} de {len(df_2022)}")
+    print(f"  - Silhouette 2007: {silhouette_2007:.4f} | 2022: {silhouette_2022:.4f}")
+    print(f"  - Davies-Bouldin 2007: {davies_bouldin_2007:.4f} | 2022: {davies_bouldin_2022:.4f}")
+    print(f"  - Calinski-Harabasz 2007: {calinski_2007:.2f} | 2022: {calinski_2022:.2f}")
     
     return True
 
@@ -140,7 +194,7 @@ def get_cluster_archetype(cluster_id, year, df_clustered):
     
     # Obtener todos los clusters y sus PIB promedios para ordenarlos
     cluster_gdps = []
-    for cid in range(3):  # 3 clusters
+    for cid in range(4):  # 4 clusters
         cdata = df_clustered[df_clustered['Cluster'] == cid]
         if len(cdata) > 0:
             cluster_gdps.append((cid, cdata['gdp_per_capita'].mean()))
@@ -158,11 +212,17 @@ def get_cluster_archetype(cluster_id, year, df_clustered):
             COLORES['turquesa'],
             "Países con alto PIB per cápita, instituciones sólidas, mercados maduros y alta estabilidad macroeconómica."
         )
-    elif rank == 1:  # PIB medio
+    elif rank == 1:  # Segundo mayor PIB
         return (
             "Mercados Emergentes",
             COLORES['magenta_suave'],
             "Economías en crecimiento con niveles medios de desarrollo, oportunidades de inversión y dinámicas comerciales activas."
+        )
+    elif rank == 2:  # Tercer PIB
+        return (
+            "Economías en Transición",
+            COLORES['azul_medio'],
+            "Países en proceso de transformación estructural con desafíos de desarrollo y oportunidades de mejora."
         )
     else:  # Menor PIB
         return (
@@ -178,7 +238,7 @@ cluster_colors_2022 = {}
 # Entrenar modelos automáticamente al inicio
 if not df_2007.empty and not df_2022.empty:
     try:
-        train_kmeans_models(3)
+        train_kmeans_models(4)
     except Exception as e:
         print(f"✗ Error al entrenar modelos: {e}")
 
@@ -244,7 +304,7 @@ subtabs_metodologia = dcc.Tabs([
         html.Div([
             html.P([
                 'Se ha determinado que ',
-                html.Strong('k = 3 clusters', style={'color': COLORES['turquesa'], 'fontSize': '1.2em'}),
+                html.Strong('k = 4 clusters', style={'color': COLORES['turquesa'], 'fontSize': '1.2em'}),
                 ' es óptimo para este análisis. Los modelos han sido entrenados automáticamente.'
             ], className='text-center', style={'marginTop': '20px', 'fontSize': '1.1em'})
         ], style={
@@ -888,21 +948,24 @@ tabs = [
                         'marginBottom': '30px'
                     }),
                     
-                    # Espacio para imagen ilustrativa
-                    html.Div([
-                        html.Div([
-                            html.P([
-                                html.I(className='fas fa-chart-line', style={'fontSize': '3em', 'color': COLORES['turquesa']})
-                            ], className='text-center mb-3'),
-                            html.P('Espacio reservado para visualización de tendencias económicas globales',
-                                  className='text-center text-muted')
-                        ], style={
-                            'padding': '40px',
-                            'backgroundColor': '#f0f0f0',
-                            'borderRadius': '10px',
-                            'border': '2px dashed #ccc'
-                        })
-                    ], className='mb-4'),
+                    # Imagen del planteamiento
+                    dbc.Row([
+                        dbc.Col([
+                            html.Div([
+                                html.Img(src='/assets/planteamiento.png', style={
+                                    'width': '100%',
+                                    'height': 'auto',
+                                    'borderRadius': '10px'
+                                })
+                            ], style={
+                                'padding': '15px',
+                                'backgroundColor': 'white',
+                                'borderRadius': '12px',
+                                'boxShadow': '0 4px 12px rgba(0,0,0,0.15)',
+                                'border': f'3px solid {COLORES["turquesa"]}'
+                            })
+                        ], lg=8, md=10, className='mx-auto mb-4')
+                    ]),
                     
                     html.H4('Pregunta Problema', className='mt-4 mb-3', style={
                         'color': COLORES['azul_medio'],
@@ -1821,8 +1884,8 @@ def update_elbow_chart(_):
         marker=dict(size=10, color=COLORES['turquesa'])
     ))
     
-    # Marcar k=3 como óptimo
-    selected_k = 3
+    # Marcar k=4 como óptimo
+    selected_k = 4
     idx = list(K_range).index(selected_k)
     fig.add_trace(go.Scatter(
         x=[selected_k],
@@ -1962,6 +2025,7 @@ def update_choropleth_maps(_):
     color_map = {
         "Economías Desarrolladas": COLORES['turquesa'],
         "Mercados Emergentes": COLORES['magenta_suave'],
+        "Economías en Transición": COLORES['azul_medio'],
         "Economías en Desarrollo": COLORES['coral_rosado']
     }
     
@@ -1973,7 +2037,7 @@ def update_choropleth_maps(_):
         hover_name='Country Name',
         hover_data={'Cluster': True, 'gdp_per_capita': ':.0f'},
         color_discrete_map=color_map,
-        category_orders={'Arquetipo': ['Economías Desarrolladas', 'Mercados Emergentes', 'Economías en Desarrollo']},
+        category_orders={'Arquetipo': ['Economías Desarrolladas', 'Mercados Emergentes', 'Economías en Transición', 'Economías en Desarrollo']},
         title='Distribución Global de Arquetipos Económicos - 2007'
     )
     fig_2007.update_layout(template='plotly_white', height=500)
@@ -1986,7 +2050,7 @@ def update_choropleth_maps(_):
         hover_name='Country Name',
         hover_data={'Cluster': True, 'gdp_per_capita': ':.0f'},
         color_discrete_map=color_map,
-        category_orders={'Arquetipo': ['Economías Desarrolladas', 'Mercados Emergentes', 'Economías en Desarrollo']},
+        category_orders={'Arquetipo': ['Economías Desarrolladas', 'Mercados Emergentes', 'Economías en Transición', 'Economías en Desarrollo']},
         title='Distribución Global de Arquetipos Económicos - 2022'
     )
     fig_2022.update_layout(template='plotly_white', height=500)
@@ -2009,19 +2073,21 @@ def update_centroid_heatmap(year):
     scaler = scaler_2007 if year == 2007 else scaler_2022
     pca = pca_2007 if year == 2007 else pca_2022
     
-    # Los centroides están en espacio PCA, necesitamos transformarlos de vuelta
-    # Obtener centroides en espacio PCA
-    centroids_pca = kmeans.cluster_centers_
+    # Los centroides pueden estar en espacio PCA o directo según la configuración
+    centroids_scaled = kmeans.cluster_centers_
     
-    # Transformar de vuelta a espacio original: PCA inverse -> Scaler inverse
-    centroids_scaled = pca.inverse_transform(centroids_pca)
+    # Si se usó PCA, transformar de vuelta
+    if pca is not None:
+        centroids_scaled = pca.inverse_transform(centroids_scaled)
+    
+    # Transformar de escala normalizada a valores originales
     centroids = scaler.inverse_transform(centroids_scaled)
     
-    # Crear heatmap
+    # Crear heatmap (usar key_variables que son las que se usaron en clustering)
     fig = go.Figure(data=go.Heatmap(
         z=centroids.T,
         x=[f'Cluster {i}' for i in range(optimal_k)],
-        y=[var.replace('_', ' ').title() for var in variables],
+        y=[var.replace('_', ' ').title() for var in key_variables],
         colorscale=[[0, COLORES['azul_profundo']], 
                    [0.5, '#FFFFFF'], 
                    [1, COLORES['coral_rosado']]],
@@ -2256,12 +2322,16 @@ def update_cluster_interpretation(year, cluster_id):
     cluster_data = df_clustered[df_clustered['Cluster'] == cluster_id]
     num_countries = len(cluster_data)
     
-    # Obtener centroide (está en espacio PCA)
-    centroid_pca = kmeans.cluster_centers_[cluster_id].reshape(1, -1)
-    # Transformar de vuelta a espacio original: PCA inverse -> Scaler inverse
-    centroid_scaled = pca.inverse_transform(centroid_pca)
+    # Obtener centroide
+    centroid_scaled = kmeans.cluster_centers_[cluster_id].reshape(1, -1)
+    
+    # Si se usó PCA, transformar de vuelta
+    if pca is not None:
+        centroid_scaled = pca.inverse_transform(centroid_scaled)
+    
+    # Transformar de escala normalizada a valores originales
     centroid_original = scaler.inverse_transform(centroid_scaled)
-    centroid = pd.Series(centroid_original[0], index=variables)
+    centroid = pd.Series(centroid_original[0], index=key_variables)
     
     # Crear diccionario de características
     cluster_profile = centroid.to_dict()
@@ -2301,14 +2371,14 @@ def update_cluster_interpretation(year, cluster_id):
     fig_radar = go.Figure()
     
     # Normalizar valores para el radar (0-1)
-    centroid_array = np.array([cluster_profile[var] for var in variables])
-    centroid_df = pd.DataFrame(centroid_array.reshape(1, -1), columns=variables)
+    centroid_array = np.array([cluster_profile[var] for var in key_variables])
+    centroid_df = pd.DataFrame(centroid_array.reshape(1, -1), columns=key_variables)
     centroid_normalized = scaler.transform(centroid_df)[0]
     centroid_normalized = (centroid_normalized - centroid_normalized.min()) / (centroid_normalized.max() - centroid_normalized.min() + 0.001)
     
     fig_radar.add_trace(go.Scatterpolar(
         r=centroid_normalized,
-        theta=[var.replace('_', ' ').title() for var in variables],
+        theta=[var.replace('_', ' ').title() for var in key_variables],
         fill='toself',
         name=f'Cluster {cluster_id}',
         line_color=color,
@@ -2327,10 +2397,10 @@ def update_cluster_interpretation(year, cluster_id):
     )
     
     # Gráfico de barras comparativo con la media global
-    global_mean = df_clustered[variables].mean()
+    global_mean = df_clustered[key_variables].mean()
     
     comparison_data = []
-    for var in variables[:8]:  # Top 8 variables
+    for var in key_variables[:8]:  # Top 8 variables
         comparison_data.append({
             'Variable': var.replace('_', ' ').title(),
             'Cluster': cluster_profile[var],
